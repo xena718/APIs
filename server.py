@@ -42,6 +42,11 @@ def find_afterparties():
 
     url = 'https://app.ticketmaster.com/discovery/v2/events'
     payload = {'apikey': API_KEY}
+    payload['keyword'] = keyword
+    payload['postalcode'] = postalcode
+    payload['radius'] = radius
+    payload['unit'] = unit
+    payload['sort'] = sort
 
     # TODO: Make a request to the Event Search endpoint to search for events
     #
@@ -53,10 +58,13 @@ def find_afterparties():
     #
     # - Replace the empty list in `events` with the list of events from your
     #   search results
+    res = requests.get(url,params=payload) #query parameters 
+    data = res.json() # data is a dict data format parsed from Json format
+    events = data.get('_embedded',{}).get('events',[])
 
-    data = {'Test': ['This is just some test data'],
-            'page': {'totalElements': 1}}
-    events = []
+    # data = {'Test': ['This is just some test data'],
+    #         'page': {'totalElements': 1}}
+    # events = []
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -72,10 +80,15 @@ def find_afterparties():
 @app.route('/event/<id>')
 def get_event_details(id):
     """View the details of an event."""
+    url = f'https://app.ticketmaster.com/discovery/v2/events/{id}'
+    payload = {'apikey': API_KEY}
+    res = requests.get(url,params=payload) #query parameters 
+    event = res.json()
+    venues = event.get('_embedded',{}).get('venues',[])
+    dates = event.get('_embedded',{}).get('dates',[])
+    classifications = event.get('_embedded',{}).get('classifications',[])
 
-    # TODO: Finish implementing this view function
-
-    return render_template('event-details.html')
+    return render_template('event-details.html', event=event, venue=venues)
 
 
 if __name__ == '__main__':
