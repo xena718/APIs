@@ -8,10 +8,6 @@ import requests
 app = Flask(__name__)
 app.secret_key = 'SECRETSECRETSECRET'
 
-# This configuration option makes the Flask interactive debugger
-# more useful (you should remove this line in production though)
-app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = True
-
 
 API_KEY = os.environ['TICKETMASTER_KEY']
 
@@ -41,30 +37,20 @@ def find_afterparties():
     sort = request.args.get('sort', '')
 
     url = 'https://app.ticketmaster.com/discovery/v2/events'
-    payload = {'apikey': API_KEY}
-    payload['keyword'] = keyword
-    payload['postalcode'] = postalcode
-    payload['radius'] = radius
-    payload['unit'] = unit
-    payload['sort'] = sort
+    payload = {'apikey': API_KEY,
+               'keyword': keyword,
+               'postalCode': postalcode,
+               'radius': radius,
+               'unit': unit,
+               'sort': sort}
 
-    # TODO: Make a request to the Event Search endpoint to search for events
-    #
-    # - Use form data from the user to populate any search parameters
-    #
-    # - Make sure to save the JSON data from the response to the `data`
-    #   variable so that it can display on the page. This is useful for
-    #   debugging purposes!
-    #
-    # - Replace the empty list in `events` with the list of events from your
-    #   search results
-    res = requests.get(url,params=payload) #query parameters 
-    data = res.json() # data is a dict data format parsed from Json format
-    events = data.get('_embedded',{}).get('events',[])
+    response = requests.get(url, params=payload)
+    data = response.json()
 
-    # data = {'Test': ['This is just some test data'],
-    #         'page': {'totalElements': 1}}
-    # events = []
+    if '_embedded' in data:
+        events = data['_embedded']['events']
+    else:
+        events = []
 
     return render_template('search-results.html',
                            pformat=pformat,
@@ -72,23 +58,24 @@ def find_afterparties():
                            results=events)
 
 
-# ===========================================================================
-# FURTHER STUDY
-# ===========================================================================
-
-
 @app.route('/event/<id>')
 def get_event_details(id):
     """View the details of an event."""
+
     url = f'https://app.ticketmaster.com/discovery/v2/events/{id}'
     payload = {'apikey': API_KEY}
-    res = requests.get(url,params=payload) #query parameters 
-    event = res.json()
-    venues = event.get('_embedded',{}).get('venues',[])
-    dates = event.get('_embedded',{}).get('dates',[])
-    classifications = event.get('_embedded',{}).get('classifications',[])
 
-    return render_template('event-details.html', event=event, venue=venues)
+    response = requests.get(url, params=payload)
+    event = response.json()
+
+    if '_embedded' in event:
+        venues = event['_embedded']['venues']
+    else:
+        venues = []
+
+    return render_template('event-details.html',
+                           event=event,
+                           venues=venues)
 
 
 if __name__ == '__main__':
